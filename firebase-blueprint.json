@@ -1,0 +1,89 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "dob": { "type": "string" },
+        "gender": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "pincode": { "type": "string" },
+        "role": { "type": "string", "enum": ["borrower", "lender", "both"] },
+        "kycStatus": { "type": "string", "enum": ["pending", "verified", "rejected"] },
+        "aadhaarNumber": { "type": "string" },
+        "panNumber": { "type": "string" },
+        "bankDetails": {
+          "type": "object",
+          "properties": {
+            "accountNumber": { "type": "string" },
+            "ifsc": { "type": "string" },
+            "bankName": { "type": "string" }
+          }
+        },
+        "employment": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string" },
+            "income": { "type": "number" },
+            "employer": { "type": "string" }
+          }
+        },
+        "creditScore": { "type": "number" },
+        "isPremium": { "type": "boolean" }
+      },
+      "required": ["uid", "fullName", "email", "role"]
+    },
+    "LoanApplication": {
+      "title": "Loan Application",
+      "description": "A request for a loan from a borrower",
+      "type": "object",
+      "properties": {
+        "borrowerId": { "type": "string" },
+        "amount": { "type": "number" },
+        "purpose": { "type": "string" },
+        "duration": { "type": "number" },
+        "preferredRate": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected", "negotiating"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["borrowerId", "amount", "purpose", "duration"]
+    },
+    "Loan": {
+      "title": "Loan",
+      "description": "An active or completed loan",
+      "type": "object",
+      "properties": {
+        "borrowerId": { "type": "string" },
+        "lenderId": { "type": "string" },
+        "amount": { "type": "number" },
+        "interestRate": { "type": "number" },
+        "duration": { "type": "number" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "completed", "overdue"] },
+        "repaymentProgress": { "type": "number" },
+        "nextDueDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["borrowerId", "lenderId", "amount", "interestRate", "duration", "startDate", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/applications/{applicationId}": {
+      "schema": "LoanApplication",
+      "description": "Loan application requests"
+    },
+    "/loans/{loanId}": {
+      "schema": "Loan",
+      "description": "Active and historical loans"
+    }
+  }
+}

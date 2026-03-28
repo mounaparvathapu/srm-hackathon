@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "mounaparvathapu@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.fullName is string && data.fullName.size() > 0 && data.fullName.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.role in ['borrower', 'lender', 'both', 'admin'];
+    }
+
+    function isValidApplication(data) {
+      return data.borrowerId == request.auth.uid &&
+             data.amount is number && data.amount > 0 &&
+             data.purpose is string && data.purpose.size() > 0 &&
+             data.duration is number && data.duration > 0;
+    }
+
+    function isValidLoan(data) {
+      return data.borrowerId is string && data.lenderId == request.auth.uid &&
+             data.amount is number && data.amount > 0 &&
+             data.interestRate is number && data.interestRate >= 0 &&
+             data.duration is number && data.duration > 0;
+    }
+
+    // Users collection
+    match /users/{uid} {
+      allow read: if isAuthenticated(); // Allow reading profiles (some info might be public)
+      allow create: if isOwner(uid) && isValidUser(request.resource.data);
+      allow update: if (isOwner(uid) || isAdmin()) && isValidUser(request.resource.data);
+    }
+
+    // Applications collection
+    match /applications/{applicationId} {
+      allow read: if isAuthenticated(); // Lenders can browse applications
+      allow create: if isAuthenticated() && isValidApplication(request.resource.data);
+      allow update: if isAuthenticated() && (request.auth.uid == resource.data.borrowerId || isAdmin());
+      allow delete: if isAuthenticated() && (request.auth.uid == resource.data.borrowerId || isAdmin());
+    }
+
+    // Loans collection
+    match /loans/{loanId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.borrowerId || request.auth.uid == resource.data.lenderId || isAdmin());
+      allow create: if isAuthenticated() && isValidLoan(request.resource.data);
+      allow update: if isAuthenticated() && (request.auth.uid == resource.data.borrowerId || request.auth.uid == resource.data.lenderId || isAdmin());
+    }
+  }
+}
